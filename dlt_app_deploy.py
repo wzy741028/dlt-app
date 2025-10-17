@@ -16,7 +16,7 @@ st.title("🎯 体彩大乐透 · 智能分析网页应用")
 @st.cache_data(ttl=3600)
 def fetch_latest_data():
     try:
-        url = "https://datachart.500.com"
+        url = "https://www.1388100.com/?action=instant&glt=37"
         response = requests.get(url, timeout=10)
         data = response.json()
         results = data['value']['list']
