@@ -21,7 +21,7 @@ st.title("🎯 体彩大乐透 · 智能分析网页应用")
 def fetch_latest_data():
     """从公开API获取最近大乐透数据"""
     try:
-        url = "https://raw.githubusercontent.com/lukeZhangMeng/datahub/main/lottery_dlt_sample.json"
+        url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry"
 
         res = requests.get(url, timeout=10)
         data = res.json()
