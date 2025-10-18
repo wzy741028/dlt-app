@@ -21,7 +21,8 @@ st.title("🎯 体彩大乐透 · 智能分析网页应用")
 def fetch_latest_data():
     """从公开API获取最近大乐透数据"""
     try:
-        url = "https://api.oioweb.cn/api/lottery/dlt"
+        url =url = "https://lotto-proxy.vercel.app/api/dlt"
+
         res = requests.get(url, timeout=10)
         data = res.json()
 
