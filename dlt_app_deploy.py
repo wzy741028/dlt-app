@@ -21,11 +21,10 @@ st.title("🎯 体彩大乐透 · 智能分析网页应用")
 def fetch_latest_data():
     """从公开API获取最近大乐透数据"""
     try:
-        url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry"
+url = "https://dlt-proxy.yourname.workers.dev/"  # ← 换成你自己的 Worker 链接
 res = requests.get(url, timeout=10)
-text = res.text
-st.write("接口返回原始内容：", text[:200])  # 只显示前 200 字符
 data = res.json()
+df = pd.DataFrame(data["value"]["list"])
 
 
         if "data" not in data:
