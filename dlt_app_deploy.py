@@ -1,5 +1,5 @@
 # dlt_app.py
-# Streamlit 在线版大乐透智能分析
+# Streamlit 在线版大乐透智能分析（带 Cloudflare 代理）
 
 import streamlit as st
 import pandas as pd
@@ -13,37 +13,36 @@ from streamlit_autorefresh import st_autorefresh
 st_autorefresh(interval=60 * 60 * 1000, key="datarefresh")
 
 st.set_page_config(page_title="大乐透智能分析", layout="wide")
-
 st.title("🎯 体彩大乐透 · 智能分析网页应用")
 
 # ============ 数据抓取函数 ============
 @st.cache_data(ttl=3600)
 def fetch_latest_data():
-    """从公开API获取最近大乐透数据"""
+    """通过 Cloudflare Workers 代理接口获取大乐透数据"""
     try:
-url = "https://dlt-proxy.yourname.workers.dev/"  # ← 换成你自己的 Worker 链接
-res = requests.get(url, timeout=10)
-data = res.json()
-df = pd.DataFrame(data["value"]["list"])
+        # ⚠️ 换成你自己的代理 Worker 链接：
+        url = "https://dlt-proxy.yourname.workers.dev/"
+        res = requests.get(url, timeout=15)
+        data = res.json()
 
-
-        if "data" not in data:
-            st.write("接口返回数据：", data)
+        # 如果代理返回非标准格式，直接显示调试信息
+        if "value" not in data or "list" not in data["value"]:
+            st.write("接口原始返回：", data)
             raise ValueError("API返回格式异常")
 
-        results = data["data"]
+        results = data["value"]["list"]
         df = pd.DataFrame(results)
-        df = df[["expect", "opencode", "opentime"]]
-        df.columns = ["期号", "开奖号码", "开奖日期"]
+        df = df.rename(columns={
+            "lotteryDrawNum": "期号",
+            "lotteryDrawResult": "开奖号码",
+            "lotteryDrawTime": "开奖日期"
+        })
         df["开奖日期"] = pd.to_datetime(df["开奖日期"], errors="coerce")
-        return df
+        return df[["期号", "开奖号码", "开奖日期"]]
 
     except Exception as e:
         st.error(f"❌ 数据抓取失败：{e}")
         return pd.DataFrame()
-
-
-
 
 # ============ 数据加载 ============
 with st.spinner("正在从官网抓取最新大乐透数据..."):
@@ -53,7 +52,7 @@ if not df.empty:
     st.success(f"✅ 已获取最新 {len(df)} 期数据（更新于 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}）")
     st.dataframe(df, use_container_width=True)
 else:
-    st.warning("未能获取数据，请稍后重试或检查网络连接。")
+    st.warning("未能获取数据，请稍后重试或检查代理连接。")
 
 # ============ 统计分析 ============
 if not df.empty:
@@ -65,18 +64,16 @@ if not df.empty:
     all_numbers = numbers.melt(var_name="位置", value_name="号码")
 
     col1, col2 = st.columns(2)
-
     with col1:
         st.subheader("🔥 前区号码分布")
         fig1 = px.histogram(all_numbers[all_numbers["位置"].str.contains("前")], x="号码", nbins=35)
         st.plotly_chart(fig1, use_container_width=True)
-
     with col2:
         st.subheader("💧 后区号码分布")
         fig2 = px.histogram(all_numbers[all_numbers["位置"].str.contains("后")], x="号码", nbins=12)
         st.plotly_chart(fig2, use_container_width=True)
 
-    # ============ 推荐算法 ============
+    # ============ 智能推荐 ============
     st.markdown("---")
     st.subheader("🎲 智能号码推荐")
 
@@ -96,3 +93,4 @@ if not df.empty:
 st.markdown("---")
 next_update = datetime.now() + timedelta(minutes=60)
 st.info(f"🕒 页面将在 {next_update.strftime('%H:%M')} 自动更新抓取最新数据（每60分钟刷新一次）")
+
