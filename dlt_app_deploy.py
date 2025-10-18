@@ -16,7 +16,71 @@ st.title("🎯 体彩大乐透 · 智能分析网页应用")
 @st.cache_data(ttl=3600)
 def fetch_latest_data():
     try:
-        url = "https://www.1388100.com/?action=instant&glt=37"
+        url = "import streamlit as st
+import pandas as pd
+import requests
+from datetime import datetime
+from streamlit_autorefresh import st_autorefresh
+
+# 每60分钟自动刷新一次
+st_autorefresh(interval=60 * 60 * 1000, key="datarefresh")
+
+st.set_page_config(page_title="大乐透数据分析", layout="wide")
+st.title("🎯 大乐透数据分析助手（自动更新版）")
+
+@st.cache_data(ttl=3600)
+def fetch_data():
+    """从体彩官方公开接口获取最近30期大乐透数据"""
+    url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry"
+    params = {"gameNo": "85", "pageSize": "30", "pageNo": "1"}
+    res = requests.get(url, timeout=10)
+    data = res.json()
+    df = pd.DataFrame(data["value"]["list"])
+    df = df.rename(columns={
+        "lotteryDrawNum": "期号",
+        "lotteryDrawResult": "开奖号码",
+        "lotteryDrawTime": "开奖日期"
+    })
+    return df[["期号", "开奖号码", "开奖日期"]]
+
+# 抓取数据
+try:
+    df = fetch_data()
+    st.success(f"✅ 数据更新成功！最近一期：{df.iloc[0]['期号']} （{df.iloc[0]['开奖日期']}）")
+
+    # 显示表格
+    st.dataframe(df, use_container_width=True, hide_index=True)
+
+    # 分析区
+    st.subheader("📊 开奖号码分布分析")
+    nums = df["开奖号码"].str.split(" ", expand=True)
+    front_nums = nums.iloc[:, :5].astype(int).values.flatten()
+    back_nums = nums.iloc[:, 5:].astype(int).values.flatten()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("前区号码分布（1-35）")
+        front_counts = pd.Series(front_nums).value_counts().sort_index()
+        st.bar_chart(front_counts)
+    with col2:
+        st.write("后区号码分布（1-12）")
+        back_counts = pd.Series(back_nums).value_counts().sort_index()
+        st.bar_chart(back_counts)
+
+    # 推荐号码
+    st.subheader("🎰 智能推荐号码（随机策略）")
+    import random
+    if st.button("生成推荐号码"):
+        front = sorted(random.sample(range(1, 36), 5))
+        back = sorted(random.sample(range(1, 13), 2))
+        st.success(f"推荐号码：{' '.join(map(str, front))} + {' '.join(map(str, back))}")
+
+except Exception as e:
+    st.error(f"❌ 抓取数据失败：{e}")
+    st.info("请稍后再试，或手动刷新。")
+
+st.caption("数据来源：中国体育彩票公开接口 ｜ 每60分钟自动刷新一次")
+"
         response = requests.get(url, timeout=10)
         data = response.json()
         results = data['value']['list']
