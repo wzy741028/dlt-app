@@ -22,8 +22,7 @@ def fetch_latest_data():
     """从公开API获取最近大乐透数据"""
     try:
         url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry"
-
-      res = requests.get(url, timeout=10)
+res = requests.get(url, timeout=10)
 text = res.text
 st.write("接口返回原始内容：", text[:200])  # 只显示前 200 字符
 data = res.json()
