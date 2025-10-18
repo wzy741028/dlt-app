@@ -19,21 +19,26 @@ st.title("🎯 体彩大乐透 · 智能分析网页应用")
 # ============ 数据抓取函数 ============
 @st.cache_data(ttl=3600)
 def fetch_latest_data():
-    """从官方接口获取最近30期大乐透数据"""
+    """从可访问的中转API获取最近30期大乐透数据"""
     try:
-        url = "https://webapi.sporttery.cn/gateway/lottery/getHistoryPageListV1.qry"
-        params = {"gameNo": "85", "pageSize": "30", "pageNo": "1"}
-        response = requests.get(url, params=params, timeout=10)
-        data = response.json()
-        results = data["value"]["list"]
+        # ✅ 这个接口可在国外服务器访问
+        proxy_url = "https://api.apiopen.top/api/getLottery?page=1&type=superLotto"
+        res = requests.get(proxy_url, timeout=10)
+        data = res.json()
+
+        if "result" not in data:
+            raise ValueError("API返回格式异常")
+
+        results = data["result"]
         df = pd.DataFrame(results)
-        df = df[["lotteryDrawNum", "lotteryDrawResult", "lotteryDrawTime"]]
+        df = df[["expect", "openCode", "time"]]
         df.columns = ["期号", "开奖号码", "开奖日期"]
         df["开奖日期"] = pd.to_datetime(df["开奖日期"], errors="coerce")
         return df
     except Exception as e:
         st.error(f"❌ 数据抓取失败：{e}")
         return pd.DataFrame()
+
 
 # ============ 数据加载 ============
 with st.spinner("正在从官网抓取最新大乐透数据..."):
